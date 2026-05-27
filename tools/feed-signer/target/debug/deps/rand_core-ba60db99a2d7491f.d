@@ -1,0 +1,10 @@
+C:\Users\scarl\Documents\Codex\2026-05-25\new-chat\SecureVaultUltimate\tools\feed-signer\target\debug\deps\rand_core-ba60db99a2d7491f.d: C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\lib.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\block.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\error.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\impls.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\le.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\os.rs
+
+C:\Users\scarl\Documents\Codex\2026-05-25\new-chat\SecureVaultUltimate\tools\feed-signer\target\debug\deps\librand_core-ba60db99a2d7491f.rmeta: C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\lib.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\block.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\error.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\impls.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\le.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\os.rs
+
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\lib.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\block.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\error.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\impls.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\le.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\rand_core-0.6.4\src\os.rs:

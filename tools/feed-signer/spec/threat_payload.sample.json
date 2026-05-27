@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "feedVersion": "2026.05.27-example.1",
+  "publishedUtc": "2026-05-27T00:00:00Z",
+  "ransomwareExtensions": [
+    {
+      "extension": ".locked",
+      "family": "example-locker",
+      "severity": "high",
+      "firstSeenUtc": "2026-05-01T00:00:00Z",
+      "notes": "Reference sample only; replace with production intelligence."
+    },
+    {
+      "extension": ".crypt",
+      "family": "example-cryptor",
+      "severity": "medium",
+      "firstSeenUtc": "2026-05-02T00:00:00Z",
+      "notes": "Reference sample only; replace with production intelligence."
+    }
+  ],
+  "yaraRules": [
+    {
+      "id": "mass-rename-burst-v1",
+      "name": "Mass Rename Burst",
+      "severity": "high",
+      "rule": "rule MassRenameBurst { condition: true }",
+      "description": "Behavioral placeholder for short-window bulk rename/write detection."
+    }
+  ],
+  "trustedProcesses": [
+    {
+      "name": "WINWORD.EXE",
+      "publisher": "Microsoft Corporation",
+      "sha256": null,
+      "allowedOperations": ["temporaryOpen"],
+      "notes": "Example only; production entries should include publisher and hash constraints where possible."
+    }
+  ],
+  "revokedFeedVersions": [],
+  "minimumClientSchemaVersion": 1
+}

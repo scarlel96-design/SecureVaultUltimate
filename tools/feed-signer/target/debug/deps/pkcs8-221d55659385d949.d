@@ -1,0 +1,10 @@
+C:\Users\scarl\Documents\Codex\2026-05-25\new-chat\SecureVaultUltimate\tools\feed-signer\target\debug\deps\pkcs8-221d55659385d949.d: C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\lib.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\error.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\private_key_info.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\traits.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\version.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\../README.md
+
+C:\Users\scarl\Documents\Codex\2026-05-25\new-chat\SecureVaultUltimate\tools\feed-signer\target\debug\deps\libpkcs8-221d55659385d949.rmeta: C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\lib.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\error.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\private_key_info.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\traits.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\version.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\../README.md
+
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\lib.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\error.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\private_key_info.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\traits.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\version.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pkcs8-0.11.0\src\../README.md:

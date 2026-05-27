@@ -1,0 +1,20 @@
+[package]
+name = "feed-signer"
+version = "0.1.0"
+edition = "2021"
+description = "Offline SecureVault threat-feed key generation and signing tool"
+publish = false
+
+[dependencies]
+anyhow = "1.0.102"
+base64 = "0.22.1"
+chrono = { version = "0.4.42", features = ["serde"] }
+clap = { version = "4.5.53", features = ["derive"] }
+ed25519-dalek = { version = "2.2.0", features = ["rand_core"] }
+ml-dsa = { version = "0.1.0", features = ["getrandom", "zeroize"] }
+rand_core = { version = "0.6.4", features = ["getrandom"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+sha2 = "0.10.9"
+windows-sys = { version = "0.61.2", features = ["Win32_Storage_FileSystem"], optional = false }
+zeroize = "1.8.2"

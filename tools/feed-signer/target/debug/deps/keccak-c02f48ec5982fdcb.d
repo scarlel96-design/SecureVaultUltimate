@@ -1,0 +1,10 @@
+C:\Users\scarl\Documents\Codex\2026-05-25\new-chat\SecureVaultUltimate\tools\feed-signer\target\debug\deps\keccak-c02f48ec5982fdcb.d: C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\lib.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\backends.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\backends\soft.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\consts.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\types.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\../README.md
+
+C:\Users\scarl\Documents\Codex\2026-05-25\new-chat\SecureVaultUltimate\tools\feed-signer\target\debug\deps\libkeccak-c02f48ec5982fdcb.rmeta: C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\lib.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\backends.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\backends\soft.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\consts.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\types.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\../README.md
+
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\lib.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\backends.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\backends\soft.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\consts.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\types.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\keccak-0.2.0\src\../README.md:

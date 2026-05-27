@@ -1,0 +1,11 @@
+C:\Users\scarl\Documents\Codex\2026-05-25\new-chat\SecureVaultUltimate\tools\feed-signer\target\debug\deps\cmov-b8b2c8a8692df77c.d: C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\lib.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\macros.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\array.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\backends.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\backends\x86.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\slice.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\../README.md
+
+C:\Users\scarl\Documents\Codex\2026-05-25\new-chat\SecureVaultUltimate\tools\feed-signer\target\debug\deps\libcmov-b8b2c8a8692df77c.rmeta: C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\lib.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\macros.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\array.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\backends.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\backends\x86.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\slice.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\../README.md
+
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\lib.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\macros.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\array.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\backends.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\backends\x86.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\slice.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\cmov-0.5.3\src\../README.md:

@@ -1,0 +1,143 @@
+name: SecureVault Threat Intelligence Sync
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      require_remote:
+        description: "Fail the run if every remote source is unavailable"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      feed_version:
+        description: "Optional manual feedVersion override"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: secure-vault-threat-sync-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  collect-sign-deploy:
+    name: Collect, sign, and publish threat feed
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CARGO_TERM_COLOR: always
+      FEED_OUT_DIR: build/threat-sync
+      PAGES_OUT_DIR: public
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          python --version
+          rustc --version
+          cargo --version
+
+      - name: Validate signing secrets
+        shell: bash
+        env:
+          SECURE_VAULT_FEED_ED25519_PRIVATE_JSON: ${{ secrets.SECURE_VAULT_FEED_ED25519_PRIVATE_JSON }}
+          SECURE_VAULT_FEED_ED25519_PRIVATE_JSON_B64: ${{ secrets.SECURE_VAULT_FEED_ED25519_PRIVATE_JSON_B64 }}
+          SECURE_VAULT_FEED_ML_DSA_65_PRIVATE_JSON: ${{ secrets.SECURE_VAULT_FEED_ML_DSA_65_PRIVATE_JSON }}
+          SECURE_VAULT_FEED_ML_DSA_65_PRIVATE_JSON_B64: ${{ secrets.SECURE_VAULT_FEED_ML_DSA_65_PRIVATE_JSON_B64 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${SECURE_VAULT_FEED_ED25519_PRIVATE_JSON}" && -z "${SECURE_VAULT_FEED_ED25519_PRIVATE_JSON_B64}" ]]; then
+            echo "::error::Missing Ed25519 signing key secret. Set SECURE_VAULT_FEED_ED25519_PRIVATE_JSON_B64 or SECURE_VAULT_FEED_ED25519_PRIVATE_JSON."
+            exit 1
+          fi
+          if [[ -z "${SECURE_VAULT_FEED_ML_DSA_65_PRIVATE_JSON}" && -z "${SECURE_VAULT_FEED_ML_DSA_65_PRIVATE_JSON_B64}" ]]; then
+            echo "::error::Missing ML-DSA-65 signing key secret. Set SECURE_VAULT_FEED_ML_DSA_65_PRIVATE_JSON_B64 or SECURE_VAULT_FEED_ML_DSA_65_PRIVATE_JSON."
+            exit 1
+          fi
+
+      - name: Collect and normalize open-source threat intelligence
+        shell: bash
+        env:
+          MANUAL_REQUIRE_REMOTE: ${{ github.event.inputs.require_remote }}
+          MANUAL_FEED_VERSION: ${{ github.event.inputs.feed_version }}
+          URLHAUS_AUTH_KEY: ${{ secrets.URLHAUS_AUTH_KEY }}
+          RANSOMWARE_EXTENSION_FEED_URLS: ${{ vars.RANSOMWARE_EXTENSION_FEED_URLS }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${FEED_OUT_DIR}"
+          args=(--out "${FEED_OUT_DIR}/threat_payload.json")
+
+          require_remote="true"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            require_remote="${MANUAL_REQUIRE_REMOTE:-true}"
+          fi
+          if [[ "${require_remote}" == "true" ]]; then
+            args+=(--require-remote)
+          fi
+
+          if [[ -n "${MANUAL_FEED_VERSION:-}" ]]; then
+            args+=(--feed-version "${MANUAL_FEED_VERSION}")
+          fi
+
+          python tools/threat-sync/collect_threat_feed.py "${args[@]}"
+          python -m json.tool "${FEED_OUT_DIR}/threat_payload.json" >/dev/null
+
+      - name: Build detached feed signer
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --manifest-path tools/feed-signer/Cargo.toml --release
+
+      - name: Sign feed envelope from GitHub Secrets
+        shell: bash
+        env:
+          SECURE_VAULT_FEED_ED25519_PRIVATE_JSON: ${{ secrets.SECURE_VAULT_FEED_ED25519_PRIVATE_JSON }}
+          SECURE_VAULT_FEED_ED25519_PRIVATE_JSON_B64: ${{ secrets.SECURE_VAULT_FEED_ED25519_PRIVATE_JSON_B64 }}
+          SECURE_VAULT_FEED_ML_DSA_65_PRIVATE_JSON: ${{ secrets.SECURE_VAULT_FEED_ML_DSA_65_PRIVATE_JSON }}
+          SECURE_VAULT_FEED_ML_DSA_65_PRIVATE_JSON_B64: ${{ secrets.SECURE_VAULT_FEED_ML_DSA_65_PRIVATE_JSON_B64 }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${PAGES_OUT_DIR}"
+          ./tools/feed-signer/target/release/feed-signer sign-feed \
+            --payload "${FEED_OUT_DIR}/threat_payload.json" \
+            --keys-env-prefix SECURE_VAULT_FEED_ \
+            --out "${PAGES_OUT_DIR}/secure-vault-feed.json"
+          sha256sum "${PAGES_OUT_DIR}/secure-vault-feed.json" > "${PAGES_OUT_DIR}/secure-vault-feed.json.sha256"
+          printf "ok\n" > "${PAGES_OUT_DIR}/health.txt"
+          touch "${PAGES_OUT_DIR}/.nojekyll"
+
+      - name: Publish signed feed to gh-pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage="${RUNNER_TEMP}/secure-vault-pages"
+          rm -rf "${stage}"
+          mkdir -p "${stage}"
+          cp -R "${PAGES_OUT_DIR}/." "${stage}/"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan gh-pages-deploy
+          git rm -rf . >/dev/null 2>&1 || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -R "${stage}/." .
+          git add .
+          git commit -m "Publish SecureVault threat feed ${GITHUB_RUN_ID}"
+          git push --force origin HEAD:gh-pages

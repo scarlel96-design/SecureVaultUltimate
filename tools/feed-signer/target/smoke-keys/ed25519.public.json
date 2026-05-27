@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "tool": "feed-signer/0.1.0",
+  "algorithm": "Ed25519",
+  "keyId": "ed25519-ae70a2586a44c68111866a2ddf079702",
+  "createdUtc": "2026-05-27T07:26:10.533232100+00:00",
+  "encoding": "raw-base64",
+  "publicKeyB64": "jLmlw8wn4OUljbH+F6tjnnAG8MExLPoyE7m3yKq1s3c="
+}

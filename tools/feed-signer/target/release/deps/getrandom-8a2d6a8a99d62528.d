@@ -1,0 +1,10 @@
+C:\Users\scarl\Documents\Codex\2026-05-25\new-chat\SecureVaultUltimate\tools\feed-signer\target\release\deps\getrandom-8a2d6a8a99d62528.d: C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\lib.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\error.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\util.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\windows.rs
+
+C:\Users\scarl\Documents\Codex\2026-05-25\new-chat\SecureVaultUltimate\tools\feed-signer\target\release\deps\libgetrandom-8a2d6a8a99d62528.rlib: C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\lib.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\error.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\util.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\windows.rs
+
+C:\Users\scarl\Documents\Codex\2026-05-25\new-chat\SecureVaultUltimate\tools\feed-signer\target\release\deps\libgetrandom-8a2d6a8a99d62528.rmeta: C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\lib.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\error.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\util.rs C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\windows.rs
+
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\lib.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\error.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\util.rs:
+C:\Users\scarl\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\getrandom-0.2.17\src\windows.rs:

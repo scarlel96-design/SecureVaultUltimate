@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "SecureVault Ultimate",
+  "version": "0.1.0",
+  "identifier": "com.securevault.ultimate",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "SecureVault Ultimate",
+        "width": 1180,
+        "height": 760,
+        "minWidth": 900,
+        "minHeight": 620,
+        "dragDropEnabled": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "publisher": "SecureVault",
+    "shortDescription": "Zero-knowledge encrypted vault",
+    "longDescription": "A zero-knowledge encrypted vault with directory flattening, encrypted indexes, chunked AES-GCM storage, and local defense checks.",
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "displayLanguageSelector": true,
+        "installerHooks": "nsis-hooks.nsh"
+      }
+    }
+  }
+}

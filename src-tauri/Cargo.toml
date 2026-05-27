@@ -1,0 +1,41 @@
+[package]
+name = "secure-vault-ultimate"
+version = "0.1.0"
+description = "Zero-knowledge secure vault application"
+authors = ["SecureVault"]
+edition = "2021"
+
+[lib]
+name = "secure_vault_ultimate_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.5.0", features = [] }
+
+[dependencies]
+aes-gcm = "0.10.3"
+argon2 = "0.5.3"
+base64 = "0.22.1"
+chrono = { version = "0.4.42", features = ["serde"] }
+hkdf = "0.12.4"
+rand = "0.8.5"
+reed-solomon-erasure = "6.0.0"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+sha2 = "0.10.9"
+tauri = { version = "2.10.2", features = [] }
+tauri-plugin-dialog = "2.4.0"
+thiserror = "2.0.17"
+uuid = { version = "1.18.1", features = ["v4", "serde"] }
+walkdir = "2.5.0"
+windows-sys = { version = "0.61.2", features = [
+  "Win32_Foundation",
+  "Win32_Networking_WinHttp",
+  "Win32_System_Diagnostics_Debug",
+  "Win32_Storage_FileSystem",
+  "Win32_System_Threading"
+] }
+zeroize = { version = "1.8.2", features = ["zeroize_derive"] }
+
+[dev-dependencies]
+tempfile = "3.23.0"

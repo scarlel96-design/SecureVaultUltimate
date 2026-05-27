@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "signingProfile": "secure-vault-threat-feed/v1",
+  "tool": "feed-signer/0.1.0",
+  "createdUtc": "2026-05-27T08:41:28.250889+00:00",
+  "feedVersion": "2026.05.27-example.1",
+  "canonicalization": "serde_json-minified-sorted-map",
+  "payloadSha256B64": "xtk60QSUXMJO8ExDH0wouuylI+LZvVbC0s2LVmISchg=",
+  "payload": {
+    "feedVersion": "2026.05.27-example.1",
+    "minimumClientSchemaVersion": 1,
+    "publishedUtc": "2026-05-27T00:00:00Z",
+    "ransomwareExtensions": [
+      {
+        "extension": ".locked",
+        "family": "example-locker",
+        "firstSeenUtc": "2026-05-01T00:00:00Z",
+        "notes": "Reference sample only; replace with production intelligence.",
+        "severity": "high"
+      },
+      {
+        "extension": ".crypt",
+        "family": "example-cryptor",
+        "firstSeenUtc": "2026-05-02T00:00:00Z",
+        "notes": "Reference sample only; replace with production intelligence.",
+        "severity": "medium"
+      }
+    ],
+    "revokedFeedVersions": [],
+    "schemaVersion": 1,
+    "trustedProcesses": [
+      {
+        "allowedOperations": [
+          "temporaryOpen"
+        ],
+        "name": "WINWORD.EXE",
+        "notes": "Example only; production entries should include publisher and hash constraints where possible.",
+        "publisher": "Microsoft Corporation",
+        "sha256": null
+      }
+    ],
+    "yaraRules": [
+      {
+        "description": "Behavioral placeholder for short-window bulk rename/write detection.",
+        "id": "mass-rename-burst-v1",
+        "name": "Mass Rename Burst",
+        "rule": "rule MassRenameBurst { condition: true }",
+        "severity": "high"
+      }
+    ]
+  },
+  "signatures": [
+    {
+      "algorithm": "Ed25519",
+      "keyId": "ed25519-d0eac6be862108b83316bfd127c19ea4",
+      "signatureB64": "rti0rxjNskf5eUf6FB/GhELlQPfOpeYMSpH5LXtn8kgPHtUpA2avHpAyx9t20ErIbKKdsELxki7GQpakgQJICQ==",
+      "messageSha256B64": "ooWYjVmvdBgnOo/zqbU2zxI+V7NxEH/W15I4ZtSlNdc="
+    },
+    {
+      "algorithm": "ML-DSA-65",
+      "keyId": "mldsa65-3f52fab2cb9ad48613571ec83f8d792c",
+      "signatureB64": "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",
+      "messageSha256B64": "ooWYjVmvdBgnOo/zqbU2zxI+V7NxEH/W15I4ZtSlNdc="
+    }
+  ],
+  "thresholdPolicy": {
+    "requiredAlgorithms": [
+      "Ed25519",
+      "ML-DSA-65"
+    ],
+    "mOfN": {
+      "m": 2,
+      "n": 2
+    }
+  }
+}
