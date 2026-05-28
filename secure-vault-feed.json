@@ -1,0 +1,250 @@
+{
+  "schemaVersion": 1,
+  "signingProfile": "secure-vault-threat-feed/v1",
+  "tool": "feed-signer/0.1.0",
+  "createdUtc": "2026-05-28T23:02:24.052549206+00:00",
+  "feedVersion": "2026.05.28.2301Z",
+  "canonicalization": "serde_json-minified-sorted-map",
+  "payloadSha256B64": "JJFCA6wD2femoGu+DBAERivWW1FaVRndFY54S9JVnnE=",
+  "payload": {
+    "feedVersion": "2026.05.28.2301Z",
+    "minimumClientSchemaVersion": 1,
+    "publishedUtc": "2026-05-28T23:01:57Z",
+    "ransomwareExtensions": [
+      {
+        "extension": ".8base",
+        "family": "8base",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".akira",
+        "family": "akira",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".arena",
+        "family": "arena",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".basta",
+        "family": "black-basta",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".blackcat",
+        "family": "blackcat",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".cerber",
+        "family": "cerber",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".conti",
+        "family": "conti",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".cryp1",
+        "family": "cryptxxx",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".crypt",
+        "family": "generic-cryptor",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".crypted",
+        "family": "generic-cryptor",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".dharma",
+        "family": "dharma",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".djvu",
+        "family": "stop-djvu",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".lockbit",
+        "family": "lockbit",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".lockbit3",
+        "family": "lockbit",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".locked",
+        "family": "generic-locker",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".locky",
+        "family": "locky",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".mallox",
+        "family": "mallox",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".odin",
+        "family": "locky",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".phobos",
+        "family": "phobos",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".revil",
+        "family": "revil",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".ryuk",
+        "family": "ryuk",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".stop",
+        "family": "stop-djvu",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".wallet",
+        "family": "dharma",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".wcry",
+        "family": "wannacry",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".wncry",
+        "family": "wannacry",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      },
+      {
+        "extension": ".zepto",
+        "family": "locky",
+        "firstSeenUtc": null,
+        "notes": "Built-in bootstrap indicator retained until remote ransomware-extension feeds supersede it.",
+        "severity": "high"
+      }
+    ],
+    "revokedFeedVersions": [],
+    "schemaVersion": 1,
+    "sourceSummary": {
+      "builtinBootstrapEnabled": true,
+      "failedSources": [],
+      "remoteRansomwareExtensionCount": 0,
+      "successfulSources": [
+        "urlhaus-recent-payloads"
+      ],
+      "urlhausPayloadExtensionCount": 1
+    },
+    "trustedProcesses": [],
+    "yaraRules": [
+      {
+        "description": "Placeholder for short-window bulk rename/write behavior detection.",
+        "id": "secure-vault-mass-rename-burst-v1",
+        "name": "SecureVault Mass Rename Burst",
+        "rule": "rule SecureVaultMassRenameBurst { meta: source = \"secure-vault-threat-sync\" description = \"Behavioral engine placeholder; host app evaluates file-event bursts.\" condition: false }",
+        "severity": "high"
+      },
+      {
+        "description": "Non-blocking context generated from recent malware payload filenames.",
+        "id": "urlhaus-recent-payload-extension-context-v1",
+        "name": "URLHaus Recent Payload Extension Context",
+        "rule": "rule URLHausRecentPayloadExtensionContext { meta: source = \"urlhaus\" payload_extensions = \".exe\" condition: false }",
+        "severity": "medium"
+      }
+    ]
+  },
+  "signatures": [
+    {
+      "algorithm": "Ed25519",
+      "keyId": "ed25519-d0eac6be862108b83316bfd127c19ea4",
+      "signatureB64": "MeKwoIjC6X3fz1wrxRgZLXzPb8V8FyX3qGfnj8shkbbYhYWWB9tQZBvru89rPhCc/0d2BxGjP2qjigaMsfcJCw==",
+      "messageSha256B64": "P36c4cMaLK7cDBPHrNamEkKJGiveRiMNucJLzwXURn8="
+    },
+    {
+      "algorithm": "ML-DSA-65",
+      "keyId": "mldsa65-3f52fab2cb9ad48613571ec83f8d792c",
+      "signatureB64": "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",
+      "messageSha256B64": "P36c4cMaLK7cDBPHrNamEkKJGiveRiMNucJLzwXURn8="
+    }
+  ],
+  "thresholdPolicy": {
+    "requiredAlgorithms": [
+      "Ed25519",
+      "ML-DSA-65"
+    ],
+    "mOfN": {
+      "m": 2,
+      "n": 2
+    }
+  }
+}
