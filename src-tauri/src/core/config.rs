@@ -50,6 +50,8 @@ pub struct AppSettings {
     pub scan_on_action_integrity: bool,
     #[serde(default)]
     pub secure_wipe_on_uninstall: bool,
+    #[serde(default = "default_locale")]
+    pub locale: String,
     #[serde(default)]
     pub decoy_password: Option<DecoyPasswordRecord>,
     pub updated_utc: String,
@@ -76,6 +78,7 @@ pub struct SettingsView {
     pub vanguard_scan_interval_minutes: u64,
     pub scan_on_action_integrity: bool,
     pub secure_wipe_on_uninstall: bool,
+    pub locale: String,
     pub decoy_password_configured: bool,
     pub updated_utc: String,
 }
@@ -89,6 +92,8 @@ pub struct SettingsUpdate {
     pub vanguard_scan_interval_minutes: u64,
     pub scan_on_action_integrity: bool,
     pub secure_wipe_on_uninstall: bool,
+    #[serde(default = "default_locale")]
+    pub locale: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -108,6 +113,7 @@ impl Default for AppSettings {
             vanguard_scan_interval_minutes: default_vanguard_scan_interval_minutes(),
             scan_on_action_integrity: default_scan_on_action_integrity(),
             secure_wipe_on_uninstall: false,
+            locale: default_locale(),
             decoy_password: None,
             updated_utc: Utc::now().to_rfc3339(),
         }
@@ -165,6 +171,7 @@ impl SettingsStore {
         settings.vanguard_scan_interval_minutes = update.vanguard_scan_interval_minutes;
         settings.scan_on_action_integrity = update.scan_on_action_integrity;
         settings.secure_wipe_on_uninstall = update.secure_wipe_on_uninstall;
+        settings.locale = update.locale;
         settings.updated_utc = Utc::now().to_rfc3339();
         self.save(&settings)?;
         Ok(settings)
@@ -229,6 +236,7 @@ impl From<&AppSettings> for SettingsView {
             vanguard_scan_interval_minutes: settings.vanguard_scan_interval_minutes,
             scan_on_action_integrity: settings.scan_on_action_integrity,
             secure_wipe_on_uninstall: settings.secure_wipe_on_uninstall,
+            locale: settings.locale.clone(),
             decoy_password_configured: settings.decoy_password.is_some(),
             updated_utc: settings.updated_utc.clone(),
         }
@@ -248,7 +256,12 @@ pub fn validate_settings(settings: &AppSettings) -> ConfigResult<()> {
     }
     if !(1..=60).contains(&settings.vanguard_scan_interval_minutes) {
         return Err(ConfigError::InvalidValue(
-            "뱅가드 감시 인터벌은 1~60분 사이여야 합니다.".to_string(),
+            "자체 보호 스캔 주기는 1~60분 사이여야 합니다.".to_string(),
+        ));
+    }
+    if !["ko", "en"].contains(&settings.locale.as_str()) {
+        return Err(ConfigError::InvalidValue(
+            "지원 언어는 ko 또는 en만 허용됩니다.".to_string(),
         ));
     }
     if !settings.threat_feed_url.is_empty() {
@@ -355,4 +368,8 @@ fn default_vanguard_scan_interval_minutes() -> u64 {
 
 fn default_scan_on_action_integrity() -> bool {
     true
+}
+
+fn default_locale() -> String {
+    "ko".to_string()
 }

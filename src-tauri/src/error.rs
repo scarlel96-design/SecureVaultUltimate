@@ -12,7 +12,7 @@ pub enum VaultError {
     UnsupportedFormat,
     #[error("항목을 찾을 수 없습니다.")]
     EntryNotFound,
-    #[error("데이터 청크가 누락되었습니다: {0}")]
+    #[error("보호 데이터 블록이 누락되었습니다: {0}")]
     MissingChunk(String),
     #[error("입력 경로를 찾을 수 없습니다: {0}")]
     MissingInput(String),

@@ -73,16 +73,32 @@ pub fn spawn(app: &tauri::App) {
 }
 
 pub fn scan_state(state: &AppState, trigger: &str) -> Result<VanguardScanReport, VanguardError> {
-    let mut logs = vec![format!("[VANGUARD] {trigger} 무결성 스캔 시작")];
+    let mut logs = vec![format!("[SELF-PROTECTION] {trigger} 자체 보호 스캔 시작")];
     if security::debugger_detected() {
-        return Err(VanguardError::DebuggerDetected);
+        if cfg!(debug_assertions) {
+            logs.push(
+                "[SELF-PROTECTION] 개발 빌드 경고: 디버거가 감지되었지만 세션을 유지합니다."
+                    .to_string(),
+            );
+        } else {
+            return Err(VanguardError::DebuggerDetected);
+        }
+    } else {
+        logs.push("[SELF-PROTECTION] anti-debug probe clear".to_string());
     }
-    logs.push("[VANGUARD] anti-debug probe clear".to_string());
 
     if binary_changed(state)? {
-        return Err(VanguardError::BinaryTamper);
+        if cfg!(debug_assertions) {
+            logs.push(
+                "[SELF-PROTECTION] 개발 빌드 경고: 실행 파일 해시 앵커가 일치하지 않습니다."
+                    .to_string(),
+            );
+        } else {
+            return Err(VanguardError::BinaryTamper);
+        }
+    } else {
+        logs.push("[SELF-PROTECTION] executable hash anchor verified".to_string());
     }
-    logs.push("[VANGUARD] executable hash anchor verified".to_string());
 
     let guard = state
         .session
@@ -92,9 +108,9 @@ pub fn scan_state(state: &AppState, trigger: &str) -> Result<VanguardScanReport,
         session
             .vanguard_guard_tick()
             .map_err(|error| VanguardError::VaultContamination(error.to_string()))?;
-        logs.push("[VANGUARD] central chunks and honeytokens verified".to_string());
+        logs.push("[SELF-PROTECTION] protected data blocks and guard files verified".to_string());
     } else {
-        logs.push("[VANGUARD] vault session locked; key material absent".to_string());
+        logs.push("[SELF-PROTECTION] vault session locked; key material absent".to_string());
     }
 
     Ok(VanguardScanReport {
@@ -110,8 +126,20 @@ fn tick(
 ) -> Result<(), VanguardError> {
     if security::debugger_detected() {
         drop_session(state)?;
-        emit_log(handle, "critical", "[VANGUARD] 디버거 감지 -> 세션 키 파기");
-        return Err(VanguardError::DebuggerDetected);
+        if cfg!(debug_assertions) {
+            emit_log(
+                handle,
+                "info",
+                "[SELF-PROTECTION] 개발 빌드 경고: 디버거 감지, 강제 종료 생략",
+            );
+        } else {
+            emit_log(
+                handle,
+                "critical",
+                "[SELF-PROTECTION] 디버거 감지 -> 세션 키 파기",
+            );
+            return Err(VanguardError::DebuggerDetected);
+        }
     }
 
     enforce_idle_lock(state)?;
@@ -179,7 +207,9 @@ fn maybe_sync_threat_feed(state: &tauri::State<'_, AppState>) -> Result<(), Vang
         })
         .map_err(|_| VanguardError::ThreatSyncLock)?;
     if should_sync {
-        let _ = threat::sync(&settings);
+        if let Err(error) = threat::sync(&settings) {
+            eprintln!("위협 인텔리전스 동기화 실패: {error}");
+        }
     }
     Ok(())
 }
@@ -193,6 +223,9 @@ fn current_settings(state: &tauri::State<'_, AppState>) -> Result<AppSettings, V
 }
 
 fn binary_changed(state: &AppState) -> Result<bool, VanguardError> {
+    if security::release_integrity_failure().is_some() {
+        return Ok(true);
+    }
     Ok(state
         .binary_hash
         .as_ref()
@@ -223,7 +256,9 @@ fn critical_recover_or_exit(
     emit_log(
         handle,
         "critical",
-        &format!("[VANGUARD] 코어 손상 감지 -> 지능형 복구 프로토콜 직접 통제 개시: {error}"),
+        &format!(
+            "[SELF-PROTECTION] 코어 손상 감지 -> 지능형 복구 프로토콜 직접 통제 개시: {error}"
+        ),
     );
     match recovery::flash_rollback(&state.settings_store, &state.vault_root) {
         Ok(report) => {
@@ -234,7 +269,9 @@ fn critical_recover_or_exit(
             emit_log(
                 handle,
                 "critical",
-                &format!("[VANGUARD] 마스터 미러 복구 실패 -> fail-closed: {recovery_error}"),
+                &format!(
+                    "[SELF-PROTECTION] 마스터 미러 복구 실패 -> fail-closed: {recovery_error}"
+                ),
             );
             recovery::fail_closed(1);
         }
@@ -245,7 +282,7 @@ fn emit_recovery_report(handle: &tauri::AppHandle, report: &RecoveryReport) {
     emit_log(
         handle,
         "critical",
-        "[VANGUARD] 마스터 미러 복원 완료 -> 오염 세션 종료",
+        "[SELF-PROTECTION] 마스터 미러 복원 완료 -> 오염 세션 종료",
     );
     for action in &report.actions {
         emit_log(handle, "critical", &format!("[RECOVERY] {action}"));

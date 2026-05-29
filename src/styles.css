@@ -154,11 +154,19 @@ h3 {
   border-radius: 8px;
 }
 
-.vanguard-card {
+.vanguard-card,
+.shield-card {
   display: grid;
   gap: 12px;
   padding: 16px;
   border-radius: 8px;
+}
+
+.shield-card p {
+  margin: 0;
+  color: #aab8c9;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .panel-head,
@@ -334,7 +342,7 @@ h3 {
 .drop-zone {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(420px, 1fr) 220px;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 20px;
   align-items: center;
   min-height: 158px;
@@ -375,7 +383,7 @@ h3 {
 .drop-copy h3,
 .drop-copy p {
   word-break: keep-all;
-  overflow-wrap: normal;
+  overflow-wrap: anywhere;
 }
 
 .drop-copy p,
@@ -485,6 +493,26 @@ h3 {
 .row-check {
   display: grid;
   place-items: center;
+}
+
+.entry-name {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lock-indicator {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: #bfffe7;
+  border: 1px solid rgba(30, 231, 183, 0.5);
+  background: rgba(30, 231, 183, 0.1);
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .settings-backdrop,

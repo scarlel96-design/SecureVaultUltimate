@@ -1,0 +1,68 @@
+name: SecureVault Updater Manifest
+
+on:
+  release:
+    types: [published, edited]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: secure-vault-updater-manifest-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish-updater-json:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download release signature assets
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p build/release-assets public
+          gh release download "${{ github.event.release.tag_name }}" \
+            --repo "${{ github.repository }}" \
+            --pattern "*.sig" \
+            --dir build/release-assets
+
+      - name: Generate updater.json
+        if: github.event_name == 'release'
+        run: |
+          set -euo pipefail
+          python tools/updater-manifest/build_updater_manifest.py \
+            --event "$GITHUB_EVENT_PATH" \
+            --asset-dir build/release-assets \
+            --out public/updater.json
+          python -m json.tool public/updater.json >/dev/null
+
+      - name: Publish updater.json to gh-pages
+        if: github.event_name == 'release'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages || true
+          if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
+            git checkout -B gh-pages origin/gh-pages
+          else
+            git checkout --orphan gh-pages
+            git rm -rf . >/dev/null 2>&1 || true
+            find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          fi
+          cp public/updater.json updater.json
+          touch .nojekyll
+          git add .
+          git commit -m "Publish SecureVault updater manifest ${{ github.event.release.tag_name }}"
+          git push --force origin HEAD:gh-pages
+
+      - name: Manual run notice
+        if: github.event_name != 'release'
+        run: |
+          echo "This workflow publishes updater.json from a GitHub Release event."

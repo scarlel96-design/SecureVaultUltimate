@@ -7,11 +7,12 @@ use base64::engine::general_purpose::STANDARD as B64;
 use base64::Engine as _;
 use chrono::Utc;
 use hkdf::Hkdf;
+use hmac::{Hmac, Mac};
 use rand::rngs::OsRng;
 use rand::RngCore;
 use reed_solomon_erasure::galois_8::ReedSolomon;
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
+use sha2::{Digest, Sha256, Sha512};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs::{self, File};
 use std::io::{Read, Write};
@@ -35,6 +36,7 @@ const ECC_PARITY_SHARDS: usize = 3;
 const ARGON2_MEMORY_KIB: u32 = 256 * 1024;
 const ARGON2_TIME_COST: u32 = 4;
 const ARGON2_PARALLELISM: u32 = 2;
+const PBKDF2_HMAC_SHA512_ITERATIONS: u32 = 210_000;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -44,6 +46,8 @@ pub struct KdfConfig {
     pub time_cost: u32,
     pub parallelism: u32,
     pub salt_b64: String,
+    #[serde(default)]
+    pub pbkdf2_iterations: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -497,7 +501,7 @@ impl VaultSession {
                         path: folder.display().to_string(),
                         action: "lock".to_string(),
                         ok: true,
-                        detail: "폴더 잠금 완료".to_string(),
+                        detail: "보호 폴더 격리 완료".to_string(),
                         processed_entries: count,
                     },
                     Err(error) => FolderOperationResult {
@@ -520,7 +524,7 @@ impl VaultSession {
                     path: folder.display().to_string(),
                     action: "unlock".to_string(),
                     ok: true,
-                    detail: "폴더 잠금 해제 완료".to_string(),
+                    detail: "보호 폴더 원위치 복귀 완료".to_string(),
                     processed_entries: count,
                 },
                 Err(error) => FolderOperationResult {
@@ -534,6 +538,63 @@ impl VaultSession {
             .collect()
     }
 
+    pub fn unlock_locked_entries_to_original_paths(
+        &mut self,
+        entry_ids: &[String],
+    ) -> Vec<EntryOperationResult> {
+        let ids = self.effective_entry_ids(entry_ids);
+        ids.into_iter()
+            .map(|id| {
+                let entry = self.db.entries.get(&id).cloned();
+                let name = entry
+                    .as_ref()
+                    .map(|entry| entry.name.clone())
+                    .unwrap_or_else(|| id.clone());
+                let Some(path) = entry.and_then(|entry| entry.locked_folder_path) else {
+                    return EntryOperationResult {
+                        id,
+                        name,
+                        action: "unlock".to_string(),
+                        ok: false,
+                        detail: "선택 항목은 원래 위치 복귀형 보호 폴더가 아닙니다.".to_string(),
+                        processed_entries: 0,
+                    };
+                };
+                match self.unlock_folder_in_place(Path::new(&path)) {
+                    Ok(count) => EntryOperationResult {
+                        id,
+                        name,
+                        action: "unlock".to_string(),
+                        ok: true,
+                        detail: "보호 폴더가 원래 위치로 복귀되었습니다.".to_string(),
+                        processed_entries: count,
+                    },
+                    Err(error) => EntryOperationResult {
+                        id,
+                        name,
+                        action: "unlock".to_string(),
+                        ok: false,
+                        detail: error.to_string(),
+                        processed_entries: 0,
+                    },
+                }
+            })
+            .collect()
+    }
+
+    pub fn locked_folder_paths_for_entries(&self, entry_ids: &[String]) -> Vec<PathBuf> {
+        self.effective_entry_ids(entry_ids)
+            .into_iter()
+            .filter_map(|id| {
+                self.db
+                    .entries
+                    .get(&id)
+                    .and_then(|entry| entry.locked_folder_path.as_deref())
+                    .map(PathBuf::from)
+            })
+            .collect()
+    }
+
     pub fn check_folders_in_place(&self, folders: &[PathBuf]) -> Vec<FolderOperationResult> {
         folders
             .iter()
@@ -542,7 +603,7 @@ impl VaultSession {
                     path: folder.display().to_string(),
                     action: "check".to_string(),
                     ok: true,
-                    detail: "잠긴 폴더 무결성 검사 통과".to_string(),
+                    detail: "보호 폴더 무결성 검사 통과".to_string(),
                     processed_entries: count,
                 },
                 Err(error) => FolderOperationResult {
@@ -597,7 +658,7 @@ impl VaultSession {
             .ok_or(VaultError::EntryNotFound)?;
         if let Some(path) = &entry.locked_folder_path {
             return Err(VaultError::MissingInput(format!(
-                "제자리 잠긴 폴더는 '잠금 해제' 기능으로 복호화하세요: {path}"
+                "원위치 보호 폴더는 '원래 위치로 복귀' 기능으로 해제하세요: {path}"
             )));
         }
         fs::create_dir_all(destination)?;
@@ -720,7 +781,7 @@ impl VaultSession {
                     name,
                     action: "delete".to_string(),
                     ok: true,
-                    detail: "잠긴 폴더 데이터 삭제 완료".to_string(),
+                    detail: "보호 폴더 데이터 삭제 완료".to_string(),
                     processed_entries: 1,
                 });
                 continue;
@@ -1142,10 +1203,7 @@ impl VaultSession {
     fn save_db(&mut self) -> VaultResult<()> {
         self.db.updated_utc = Utc::now().to_rfc3339();
         let current = read_envelope(&self.root.db_path())?;
-        let salt = B64
-            .decode(current.kdf.salt_b64.as_bytes())
-            .map_err(|_| VaultError::UnsupportedFormat)?;
-        let envelope = encrypt_db(&self.db, &self.db_key, salt)?;
+        let envelope = encrypt_db_with_kdf(&self.db, &self.db_key, current.kdf)?;
         write_envelope_atomic(&self.root.db_path(), &self.root.db_backup_path(), &envelope)?;
         Ok(())
     }
@@ -1167,11 +1225,12 @@ struct VaultKeys {
 
 fn derive_keys(password: &str, salt: &[u8]) -> VaultResult<VaultKeys> {
     let config = KdfConfig {
-        algorithm: "argon2id".to_string(),
+        algorithm: "argon2id+pbkdf2-hmac-sha512".to_string(),
         memory_kib: ARGON2_MEMORY_KIB,
         time_cost: ARGON2_TIME_COST,
         parallelism: ARGON2_PARALLELISM,
         salt_b64: B64.encode(salt),
+        pbkdf2_iterations: Some(PBKDF2_HMAC_SHA512_ITERATIONS),
     };
     derive_keys_with_config(password, salt, &config)
 }
@@ -1181,7 +1240,7 @@ fn derive_keys_with_config(
     salt: &[u8],
     config: &KdfConfig,
 ) -> VaultResult<VaultKeys> {
-    if config.algorithm != "argon2id" {
+    if config.algorithm != "argon2id" && config.algorithm != "argon2id+pbkdf2-hmac-sha512" {
         return Err(VaultError::UnsupportedFormat);
     }
     let params = Params::new(
@@ -1197,6 +1256,19 @@ fn derive_keys_with_config(
     argon2
         .hash_password_into(&password_bytes, salt, &mut root_key)
         .map_err(|error| VaultError::Argon2(error.to_string()))?;
+    if config.algorithm == "argon2id+pbkdf2-hmac-sha512" {
+        let iterations = config
+            .pbkdf2_iterations
+            .unwrap_or(PBKDF2_HMAC_SHA512_ITERATIONS)
+            .max(100_000);
+        let pbkdf2_key = pbkdf2_hmac_sha512(&password_bytes, salt, iterations, KEY_SIZE)?;
+        let mut combiner = Sha512::new();
+        combiner.update(b"SecureVaultUltimate:hybrid-kdf:v2");
+        combiner.update(&root_key);
+        combiner.update(&pbkdf2_key);
+        let digest = combiner.finalize();
+        root_key.copy_from_slice(&digest[..KEY_SIZE]);
+    }
     let hk = Hkdf::<Sha256>::new(Some(b"SVU-HKDF-v1"), &root_key);
     let mut db_key = Zeroizing::new(vec![0u8; KEY_SIZE]);
     let mut chunk_key = Zeroizing::new(vec![0u8; KEY_SIZE]);
@@ -1207,7 +1279,59 @@ fn derive_keys_with_config(
     Ok(VaultKeys { db_key, chunk_key })
 }
 
+fn pbkdf2_hmac_sha512(
+    password: &[u8],
+    salt: &[u8],
+    iterations: u32,
+    output_len: usize,
+) -> VaultResult<Zeroizing<Vec<u8>>> {
+    type HmacSha512 = Hmac<Sha512>;
+
+    let mut output = Zeroizing::new(vec![0u8; output_len]);
+    let mut block_index = 1u32;
+    let mut offset = 0usize;
+    while offset < output_len {
+        let mut mac =
+            <HmacSha512 as Mac>::new_from_slice(password).map_err(|_| VaultError::Crypto)?;
+        mac.update(salt);
+        mac.update(&block_index.to_be_bytes());
+        let mut u = Zeroizing::new(mac.finalize().into_bytes().to_vec());
+        let mut t = Zeroizing::new(u.clone());
+
+        for _ in 1..iterations {
+            let mut mac =
+                <HmacSha512 as Mac>::new_from_slice(password).map_err(|_| VaultError::Crypto)?;
+            mac.update(&u);
+            u = Zeroizing::new(mac.finalize().into_bytes().to_vec());
+            for (target, source) in t.iter_mut().zip(u.iter()) {
+                *target ^= *source;
+            }
+        }
+
+        let take = (output_len - offset).min(t.len());
+        output[offset..offset + take].copy_from_slice(&t[..take]);
+        offset += take;
+        block_index = block_index.checked_add(1).ok_or(VaultError::Crypto)?;
+    }
+    Ok(output)
+}
+
 fn encrypt_db(db: &VaultDb, db_key: &[u8], salt: Vec<u8>) -> VaultResult<VaultEnvelope> {
+    encrypt_db_with_kdf(
+        db,
+        db_key,
+        KdfConfig {
+            algorithm: "argon2id+pbkdf2-hmac-sha512".to_string(),
+            memory_kib: ARGON2_MEMORY_KIB,
+            time_cost: ARGON2_TIME_COST,
+            parallelism: ARGON2_PARALLELISM,
+            salt_b64: B64.encode(salt),
+            pbkdf2_iterations: Some(PBKDF2_HMAC_SHA512_ITERATIONS),
+        },
+    )
+}
+
+fn encrypt_db_with_kdf(db: &VaultDb, db_key: &[u8], kdf: KdfConfig) -> VaultResult<VaultEnvelope> {
     let nonce = random_vec(NONCE_SIZE);
     let cipher = Aes256Gcm::new_from_slice(db_key).map_err(|_| VaultError::Crypto)?;
     let mut plain = Zeroizing::new(serde_json::to_vec(db)?);
@@ -1224,13 +1348,7 @@ fn encrypt_db(db: &VaultDb, db_key: &[u8], salt: Vec<u8>) -> VaultResult<VaultEn
     Ok(VaultEnvelope {
         magic: DB_MAGIC.to_string(),
         version: 1,
-        kdf: KdfConfig {
-            algorithm: "argon2id".to_string(),
-            memory_kib: ARGON2_MEMORY_KIB,
-            time_cost: ARGON2_TIME_COST,
-            parallelism: ARGON2_PARALLELISM,
-            salt_b64: B64.encode(salt),
-        },
+        kdf,
         nonce_b64: B64.encode(nonce),
         ciphertext_b64: B64.encode(ciphertext),
     })
@@ -1312,6 +1430,7 @@ fn write_session_envelope_atomic(
             time_cost: 0,
             parallelism: 0,
             salt_b64: String::new(),
+            pbkdf2_iterations: None,
         },
         nonce_b64: B64.encode(nonce),
         ciphertext_b64: B64.encode(ciphertext),
@@ -1823,7 +1942,7 @@ fn check_canaries(lock_root: &Path) -> VaultResult<()> {
         let path = lock_root.join(name);
         if !path.exists() || fs::read_to_string(&path).unwrap_or_default() != CANARY_CONTENT {
             return Err(VaultError::RecoveryFailed(format!(
-                "honeytoken modified: {}",
+                "보호 감시 파일 변조 감지: {}",
                 path.display()
             )));
         }

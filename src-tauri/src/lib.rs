@@ -1,7 +1,9 @@
 mod core;
 mod error;
 mod security;
+mod shield;
 mod threat;
+mod updates;
 mod vanguard;
 mod vault;
 
@@ -47,6 +49,36 @@ struct EntryView {
 #[tauri::command]
 fn startup_checks() -> Vec<StartupCheck> {
     security::run_startup_checks()
+}
+
+#[tauri::command]
+fn ecosystem_shield_status() -> shield::ShieldStatus {
+    shield::status()
+}
+
+#[tauri::command]
+fn ecosystem_shield_challenge_response(
+    challenge_b64: String,
+) -> Result<shield::ChallengeResponse, String> {
+    use base64::engine::general_purpose::STANDARD as B64;
+    use base64::Engine as _;
+    firewall_gate("ecosystem_shield_challenge_response")?;
+    let challenge = B64
+        .decode(challenge_b64.trim())
+        .map_err(|_| "챌린지 데이터 형식이 올바르지 않습니다.".to_string())?;
+    shield::challenge_response(&challenge).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+async fn check_secure_update(app: tauri::AppHandle) -> Result<updates::UpdateStatus, String> {
+    firewall_gate("check_secure_update")?;
+    updates::check(app).await
+}
+
+#[tauri::command]
+async fn install_secure_update(app: tauri::AppHandle) -> Result<(), String> {
+    firewall_gate("install_secure_update")?;
+    updates::install(app).await
 }
 
 #[tauri::command]
@@ -135,6 +167,12 @@ fn sync_threat_intelligence(state: tauri::State<'_, AppState>) -> Result<ThreatF
         .lock()
         .map_err(|_| "위협 피드 동기화 시간 잠금 오류".to_string())? = Some(Instant::now());
     Ok(result)
+}
+
+#[tauri::command]
+fn sync_threat_intelligence_from_url(feed_url: String) -> Result<ThreatFeedStatus, String> {
+    firewall_gate("sync_threat_intelligence_from_url")?;
+    threat::sync_url(feed_url.trim(), true).map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -287,6 +325,33 @@ fn unlock_folders_in_place(
 }
 
 #[tauri::command]
+fn unlock_locked_entries_to_original_paths(
+    state: tauri::State<'_, AppState>,
+    entry_ids: Vec<String>,
+) -> Result<Vec<EntryOperationResult>, String> {
+    firewall_gate("unlock_locked_entries_to_original_paths")?;
+    action_scan_if_enabled(&state, "restore protected folders to original paths")?;
+    let mut guard = state
+        .session
+        .lock()
+        .map_err(|_| "세션 잠금 오류".to_string())?;
+    let session = guard
+        .as_mut()
+        .ok_or_else(|| "금고가 잠겨 있습니다.".to_string())?;
+    let original_paths = session.locked_folder_paths_for_entries(&entry_ids);
+    let results = session.unlock_locked_entries_to_original_paths(&entry_ids);
+    let restored_paths: Vec<PathBuf> = original_paths
+        .into_iter()
+        .zip(results.iter())
+        .filter_map(|(path, result)| result.ok.then_some(path))
+        .collect();
+    if !restored_paths.is_empty() {
+        config::unregister_external_locks(&restored_paths).map_err(|error| error.to_string())?;
+    }
+    Ok(results)
+}
+
+#[tauri::command]
 fn check_folders_in_place(
     state: tauri::State<'_, AppState>,
     paths: Vec<String>,
@@ -392,9 +457,6 @@ fn destroy_all_vault_data(
         .session
         .lock()
         .map_err(|_| "세션 잠금 오류".to_string())?;
-    if state.vault_root.exists() && guard.is_none() {
-        return Err("외부 잠긴 폴더까지 지우려면 먼저 금고를 열어주세요.".to_string());
-    }
     if let Some(session) = guard.as_ref() {
         session
             .destroy_tracked_external_locks()
@@ -494,6 +556,7 @@ pub fn run() {
     let binary_hash = security::current_exe_sha256().ok();
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState {
             vault_root: VaultRoot::default(),
             settings_store,
@@ -505,6 +568,15 @@ pub fn run() {
             last_vanguard_scan: Mutex::new(Instant::now()),
         })
         .setup(|app| {
+            if let Some(reason) = security::release_integrity_failure() {
+                #[cfg(debug_assertions)]
+                eprintln!("안전 시뮬레이션 모드 구동 중: {reason}");
+                #[cfg(not(debug_assertions))]
+                {
+                    eprintln!("{reason}");
+                    std::process::exit(177);
+                }
+            }
             if let Some(state) = app.handle().try_state::<AppState>() {
                 vanguard::install_master_mirror(&state.settings_store, &state.vault_root).map_err(
                     |error| -> Box<dyn std::error::Error> {
@@ -513,10 +585,15 @@ pub fn run() {
                 )?;
             }
             vanguard::spawn(app);
+            shield::spawn(app);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             startup_checks,
+            ecosystem_shield_status,
+            ecosystem_shield_challenge_response,
+            check_secure_update,
+            install_secure_update,
             vanguard_scan_now,
             get_settings,
             update_settings,
@@ -524,6 +601,7 @@ pub fn run() {
             clear_decoy_password,
             threat_feed_status,
             sync_threat_intelligence,
+            sync_threat_intelligence_from_url,
             vault_exists,
             create_vault,
             unlock_vault,
@@ -533,6 +611,7 @@ pub fn run() {
             import_paths,
             lock_folders_in_place,
             unlock_folders_in_place,
+            unlock_locked_entries_to_original_paths,
             check_folders_in_place,
             restore_entry,
             restore_entries,

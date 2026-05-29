@@ -127,17 +127,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          stage="${RUNNER_TEMP}/secure-vault-pages"
-          rm -rf "${stage}"
-          mkdir -p "${stage}"
-          cp -R "${PAGES_OUT_DIR}/." "${stage}/"
-
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout --orphan gh-pages-deploy
-          git rm -rf . >/dev/null 2>&1 || true
-          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          cp -R "${stage}/." .
+          git fetch origin gh-pages || true
+          if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
+            git checkout -B gh-pages origin/gh-pages
+          else
+            git checkout --orphan gh-pages
+            git rm -rf . >/dev/null 2>&1 || true
+            find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          fi
+          cp -R "${PAGES_OUT_DIR}/." .
           git add .
           git commit -m "Publish SecureVault threat feed ${GITHUB_RUN_ID}"
           git push --force origin HEAD:gh-pages
