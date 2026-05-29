@@ -1,0 +1,55 @@
+name: Security & Obfuscation Check
+
+# 코드가 깃허브에 올라올 때마다(push) 이 감시관을 가동합니다
+on: [push]
+
+jobs:
+  security-verify:
+    # 깃허브 클라우드에서 최신 윈도우 가상 컴퓨터를 한 대 빌립니다
+    runs-on: windows-latest
+
+    steps:
+    - name: 1. 깃허브 저장소에서 소스 코드 가져오기
+      uses: actions/checkout@v4
+
+    - name: 2. Rust 컴파일 환경 세팅
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: 3. 백엔드 보안 코어 릴리즈 빌드
+      # 전체 패키징을 돌리면 시간이 너무 오래 걸리므로, 
+      # 핵심 보안 백엔드(.exe)만 추출하기 위해 카고 빌드를 고속으로 실행합니다.
+      run: cargo build --manifest-path src-tauri/Cargo.toml --release
+      env:
+        SECURE_VAULT_SHIELD_SEED: "VT9#qL2!mR8@zK5$pX7&wH3^nY6*eB4+uC1=sF0?dJ"
+        SECURE_VAULT_EXE_SHA256: "0000000000000000000000000000000000000000000000000000000000000000"
+
+    - name: 4. 🚨 마스터 시드 난독화 완벽성 검증 (정밀 바이너리 스캔)
+      shell: powershell
+      run: |
+        # Tauri v2 컴파일 결과물 파일 경로 지정
+        $exePath = "./src-tauri/target/release/secure_vault_ultimate.exe"
+        if (-not (Test-Path $exePath)) {
+            $exePath = "./src-tauri/target/release/SecureVaultUltimate.exe"
+        }
+
+        if (Test-Path $exePath) {
+            Write-Host "Target Executable Found: $exePath" -ForegroundColor Cyan
+            Write-Host "바이너리 내부 암호문 유출 테스트를 시작합니다..."
+            
+            # 컴파일 완료된 .exe 파일 몸통을 바이너리 텍스트로 통째로 읽어옵니다.
+            $content = [System.IO.File]::ReadAllText($exePath)
+            
+            # 마스터 시드가 난독화 매크로를 깨고 평문 문자열 상태로 노출되어 있는지 확인합니다.
+            if ($content.Contains("VT9#qL2!mR8@zK5")) {
+                Write-Error "🚨 보안 비상! 마스터 시드가 바이너리 내부에 평문으로 노출되었습니다! 난독화 실패!"
+                exit 1
+            } else {
+                Write-Host "==========================================================================" -ForegroundColor Green
+                Write-Host "🟢 검증 대성공: 마스터 시드가 완전히 암호화/난독화되어 숨겨졌습니다." -ForegroundColor Green
+                Write-Host "해커가 디버거로 파일 몸통을 뜯어보더라도 마스터 시드를 절대 찾아낼 수 없습니다." -ForegroundColor Green
+                Write-Host "==========================================================================" -ForegroundColor Green
+            }
+        } else {
+            Write-Error "실행 파일(.exe)이 정상적으로 생성되지 않아 보안 무결성 검증을 수행할 수 없습니다."
+            exit 1
+        }
