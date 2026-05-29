@@ -1,3 +1,316 @@
+name: "Vault Security and Obfuscation Check"
+
+"on":
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: vault-security-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: "1"
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  gitleaks-secret-scan:
+    name: Git History Secret Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout full git history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 2. Scan repository for leaked secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependency-review:
+    name: Pull Request Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: 1. Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 2. Review dependency changes
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          deny-licenses: GPL-2.0, GPL-3.0, AGPL-1.0, AGPL-3.0
+
+  rust-quality-security:
+    name: Rust Quality / Security / Crypto Policy
+    runs-on: windows-latest
+
+    steps:
+      - name: 1. Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: 3. Cache Cargo registry and target
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            src-tauri -> target
+
+      - name: 4. Verify Rust formatting
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
+
+      - name: 5. Run Clippy strict check
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
+
+      - name: 6. Run Rust tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml --all-features
+        env:
+          VAULT_TEST_PASSWORD: "ci-test-password-not-production"
+          VAULT_TEST_MODE: "1"
+
+      - name: 7. Install cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: 8. Audit Rust dependency vulnerabilities
+        run: cargo audit --file src-tauri/Cargo.lock
+
+      - name: 9. Install cargo-deny
+        run: cargo install cargo-deny --locked
+
+      - name: 10. Check Rust dependency policy with cargo-deny
+        run: cargo deny --manifest-path src-tauri/Cargo.toml check
+
+      - name: 11. Install cargo-geiger
+        continue-on-error: true
+        run: cargo install cargo-geiger --locked
+
+      - name: 12. Generate unsafe Rust usage report
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          New-Item -ItemType Directory -Force -Path "./security-reports" | Out-Null
+          cargo geiger --manifest-path src-tauri/Cargo.toml --all-features | Tee-Object -FilePath "./security-reports/unsafe-rust-report.txt"
+
+      - name: 13. Crypto and vault source policy scan
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $scanRoots = @(
+            "./src-tauri/src",
+            "./src-tauri"
+          ) | Where-Object { Test-Path $_ }
+
+          New-Item -ItemType Directory -Force -Path "./security-reports" | Out-Null
+
+          $blockPatterns = @(
+            "md5",
+            "sha1",
+            "des",
+            "3des",
+            "rc4",
+            "ecb",
+            "hardcoded",
+            "static_key",
+            "master_key",
+            "secret_key",
+            "private_key",
+            "password\s*=",
+            "token\s*=",
+            "api_key\s*="
+          )
+
+          $reviewPatterns = @(
+            "rand::thread_rng",
+            "SystemTime::now",
+            "UNIX_EPOCH",
+            "base64::encode",
+            "base64::decode",
+            "\bxor\b",
+            "unsafe\s*\{",
+            "std::mem::transmute",
+            "MaybeUninit",
+            "from_raw_parts",
+            "from_raw_parts_mut",
+            "unwrap\(\)",
+            "expect\("
+          )
+
+          $blockFindings = @()
+          $reviewFindings = @()
+
+          foreach ($root in $scanRoots) {
+            $rustFiles = Get-ChildItem -Path $root -Recurse -Filter "*.rs" -File -ErrorAction SilentlyContinue
+
+            foreach ($file in $rustFiles) {
+              foreach ($pattern in $blockPatterns) {
+                $matches = Select-String -Path $file.FullName -Pattern $pattern -CaseSensitive:$false -ErrorAction SilentlyContinue
+                if ($matches) {
+                  $blockFindings += $matches
+                }
+              }
+
+              foreach ($pattern in $reviewPatterns) {
+                $matches = Select-String -Path $file.FullName -Pattern $pattern -CaseSensitive:$false -ErrorAction SilentlyContinue
+                if ($matches) {
+                  $reviewFindings += $matches
+                }
+              }
+            }
+          }
+
+          $blockFindings | Out-File "./security-reports/crypto-block-findings.txt" -Encoding utf8
+          $reviewFindings | Out-File "./security-reports/crypto-review-findings.txt" -Encoding utf8
+
+          if ($reviewFindings.Count -gt 0) {
+            Write-Warning "Review-level crypto/vault patterns were found. Check crypto-review-findings.txt."
+          }
+
+          if ($blockFindings.Count -gt 0) {
+            Write-Error "Blocked crypto/vault source patterns found. Check crypto-block-findings.txt."
+            exit 1
+          }
+
+          Write-Host "No blocked crypto/vault source patterns found."
+
+      - name: 14. Upload Rust security reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-security-reports
+          path: security-reports/
+
+  frontend-security:
+    name: Frontend / Tauri Webview Security
+    runs-on: windows-latest
+
+    steps:
+      - name: 1. Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 3. Detect package manager
+        shell: pwsh
+        run: |
+          if (Test-Path "./pnpm-lock.yaml") {
+            "PKG_MANAGER=pnpm" | Out-File -FilePath $env:GITHUB_ENV -Append
+          } elseif (Test-Path "./yarn.lock") {
+            "PKG_MANAGER=yarn" | Out-File -FilePath $env:GITHUB_ENV -Append
+          } elseif (Test-Path "./package-lock.json") {
+            "PKG_MANAGER=npm" | Out-File -FilePath $env:GITHUB_ENV -Append
+          } else {
+            "PKG_MANAGER=none" | Out-File -FilePath $env:GITHUB_ENV -Append
+          }
+
+      - name: 4. Enable Corepack
+        if: env.PKG_MANAGER == 'pnpm' || env.PKG_MANAGER == 'yarn'
+        run: corepack enable
+
+      - name: 5. Install dependencies with npm
+        if: env.PKG_MANAGER == 'npm'
+        run: npm ci
+
+      - name: 6. Install dependencies with pnpm
+        if: env.PKG_MANAGER == 'pnpm'
+        run: pnpm install --frozen-lockfile
+
+      - name: 7. Install dependencies with yarn
+        if: env.PKG_MANAGER == 'yarn'
+        shell: pwsh
+        run: |
+          $version = yarn --version
+          $major = [int]($version.Split(".")[0])
+
+          if ($major -lt 2) {
+            yarn install --frozen-lockfile
+          } else {
+            yarn install --immutable
+          }
+
+      - name: 8. Run npm audit
+        if: env.PKG_MANAGER == 'npm'
+        run: npm audit --audit-level=moderate
+
+      - name: 9. Run pnpm audit
+        if: env.PKG_MANAGER == 'pnpm'
+        run: pnpm audit --audit-level moderate
+
+      - name: 10. Run yarn audit
+        if: env.PKG_MANAGER == 'yarn'
+        shell: pwsh
+        run: |
+          $version = yarn --version
+          $major = [int]($version.Split(".")[0])
+
+          if ($major -lt 2) {
+            yarn audit --level moderate
+          } else {
+            yarn npm audit --severity moderate
+          }
+
+      - name: 11. Run frontend lint if available
+        if: env.PKG_MANAGER != 'none'
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $pkg = Get-Content "./package.json" -Raw | ConvertFrom-Json
+          if ($pkg.scripts.lint) {
+            if ($env:PKG_MANAGER -eq "npm") {
+              npm run lint
+            } elseif ($env:PKG_MANAGER -eq "pnpm") {
+              pnpm run lint
+            } elseif ($env:PKG_MANAGER -eq "yarn") {
+              yarn lint
+            }
+          } else {
+            Write-Host "No lint script found. Skipping."
+          }
+
+      - name: 12. Run frontend typecheck if available
+        if: env.PKG_MANAGER != 'none'
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $pkg = Get-Content "./package.json" -Raw | ConvertFrom-Json
+          if ($pkg.scripts.typecheck) {
+            if ($env:PKG_MANAGER -eq "npm") {
+              npm run typecheck
+            } elseif ($env:PKG_MANAGER -eq "pnpm") {
+              pnpm run typecheck
+            } elseif ($env:PKG_MANAGER -eq "yarn") {
+              yarn typecheck
+            }
+          } else {
+            Write-Host "No typecheck script found. Skipping."
+          }
+
+  tauri-config-security:
+    name: Tauri Configuration Security Check
+    runs-on: windows-latest
+
+    steps:
+      - name: 1. Checkout repository
+        uses: actions/checkout@v4
+
       - name: 2. Check Tauri config for risky settings
         shell: pwsh
         run: |
@@ -23,19 +336,25 @@
             "unsafe-eval",
             "unsafe-inline",
             '"all"\s*:\s*true',
+            'all\s*=\s*true',
             'allowAll',
             'fs.*all.*true',
+            'fs.*all\s*=\s*true',
             'shell.*all.*true',
+            'shell.*all\s*=\s*true',
             'http://(?!localhost|127\.0\.0\.1)'
           )
 
           $reviewPatterns = @(
             "devUrl",
+            "beforeDevCommand",
+            "beforeBuildCommand",
             "localhost",
             "127.0.0.1",
             "shell",
             "open",
             "fs",
+            "path",
             "http://localhost",
             "http://127.0.0.1",
             "https://"
@@ -73,3 +392,196 @@
           }
 
           Write-Host "No critical Tauri config risk patterns found."
+
+      - name: 3. Upload Tauri config report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-config-security-report
+          path: security-reports/
+
+  build-binary-security:
+    name: Build / Binary Secret / Obfuscation Exposure Check
+    runs-on: windows-latest
+    needs:
+      - rust-quality-security
+      - frontend-security
+      - tauri-config-security
+
+    steps:
+      - name: 1. Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 3. Validate CI test secret is configured
+        shell: pwsh
+        env:
+          CI_TEST_SHIELD_SEED: ${{ secrets.CI_TEST_SHIELD_SEED }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:CI_TEST_SHIELD_SEED)) {
+            Write-Error "CI_TEST_SHIELD_SEED repository secret is not configured."
+            exit 1
+          }
+
+          Write-Host "CI test secret is configured."
+
+      - name: 4. Build release executable
+        run: cargo build --manifest-path src-tauri/Cargo.toml --release
+        env:
+          VAULT_CI_MODE: "1"
+          SECURE_VAULT_SHIELD_SEED: ${{ secrets.CI_TEST_SHIELD_SEED }}
+          SECURE_VAULT_EXE_SHA256: "0000000000000000000000000000000000000000000000000000000000000000"
+
+      - name: 5. Locate executable
+        shell: pwsh
+        run: |
+          $candidatePaths = @(
+            "./src-tauri/target/release/secure_vault_ultimate.exe",
+            "./src-tauri/target/release/SecureVaultUltimate.exe",
+            "./src-tauri/target/release/secure-vault-ultimate.exe"
+          )
+
+          $found = $null
+
+          foreach ($path in $candidatePaths) {
+            if (Test-Path $path) {
+              $found = (Resolve-Path $path).Path
+              break
+            }
+          }
+
+          if (-not $found) {
+            $exeList = Get-ChildItem "./src-tauri/target/release" -Filter "*.exe" -ErrorAction SilentlyContinue
+            if ($exeList.Count -eq 1) {
+              $found = $exeList[0].FullName
+            }
+          }
+
+          if (-not $found) {
+            Write-Error "Release executable was not found."
+            exit 1
+          }
+
+          "EXE_PATH=$found" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Target executable found: $found"
+
+      - name: 6. Calculate executable SHA256
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "./security-reports" | Out-Null
+          $hash = Get-FileHash -Algorithm SHA256 -Path $env:EXE_PATH
+
+          "Executable: $env:EXE_PATH" | Out-File "./security-reports/build-info.txt" -Encoding utf8
+          "SHA256: $($hash.Hash)" | Out-File "./security-reports/build-info.txt" -Append -Encoding utf8
+
+          "EXE_SHA256=$($hash.Hash)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Executable SHA256: $($hash.Hash)"
+
+      - name: 7. Scan binary for plaintext secrets
+        shell: pwsh
+        env:
+          CI_TEST_SHIELD_SEED: ${{ secrets.CI_TEST_SHIELD_SEED }}
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          if (-not (Test-Path $env:EXE_PATH)) {
+            Write-Error "Executable path is invalid: $env:EXE_PATH"
+            exit 1
+          }
+
+          $bytes = [System.IO.File]::ReadAllBytes($env:EXE_PATH)
+
+          $asciiText = [System.Text.Encoding]::ASCII.GetString($bytes)
+          $utf8Text = [System.Text.Encoding]::UTF8.GetString($bytes)
+          $unicodeText = [System.Text.Encoding]::Unicode.GetString($bytes)
+
+          $texts = @($asciiText, $utf8Text, $unicodeText)
+
+          $forbiddenPlaintexts = @(
+            "SECURE_VAULT_SHIELD_SEED",
+            "SECURE_VAULT_EXE_SHA256",
+            "CI_TEST_SHIELD_SEED",
+            "BEGIN PRIVATE KEY",
+            "BEGIN RSA PRIVATE KEY",
+            "BEGIN OPENSSH PRIVATE KEY",
+            "password=",
+            "passwd=",
+            "api_key",
+            "apikey",
+            "secret_key",
+            "private_key",
+            "access_token",
+            "refresh_token",
+            "master_seed",
+            "master_key",
+            "vault_key"
+          )
+
+          if (-not [string]::IsNullOrWhiteSpace($env:CI_TEST_SHIELD_SEED)) {
+            $forbiddenPlaintexts += $env:CI_TEST_SHIELD_SEED
+          }
+
+          $detected = @()
+
+          foreach ($needle in $forbiddenPlaintexts) {
+            if ([string]::IsNullOrWhiteSpace($needle)) {
+              continue
+            }
+
+            foreach ($text in $texts) {
+              if ($text.Contains($needle)) {
+                if ($needle.Length -gt 16) {
+                  $detected += ($needle.Substring(0, 8) + "...REDACTED")
+                } else {
+                  $detected += $needle
+                }
+                break
+              }
+            }
+          }
+
+          $detected | Sort-Object -Unique | Out-File "./security-reports/binary-plaintext-secret-findings.txt" -Encoding utf8
+
+          if ($detected.Count -gt 0) {
+            Write-Error "Plaintext sensitive value or marker found in binary. Review binary-plaintext-secret-findings.txt."
+            exit 1
+          }
+
+          Write-Host "No configured plaintext secret markers were found in the binary."
+
+      - name: 8. Extract suspicious binary strings for review
+        shell: pwsh
+        run: |
+          $bytes = [System.IO.File]::ReadAllBytes($env:EXE_PATH)
+          $text = [System.Text.Encoding]::ASCII.GetString($bytes)
+
+          $matches = [regex]::Matches($text, "[ -~]{8,}") | ForEach-Object { $_.Value } |
+            Where-Object {
+              $_ -match "key|secret|token|password|vault|crypto|aes|argon|pbkdf|scrypt|seed|hash|sha256|private|public|license|debug|panic|error|decrypt|encrypt|nonce|salt"
+            } |
+            Sort-Object -Unique
+
+          $matches | Out-File "./security-reports/suspicious-binary-strings.txt" -Encoding utf8
+          Write-Host "Suspicious binary string report generated."
+
+      - name: 9. Check Authenticode signature status
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $sig = Get-AuthenticodeSignature -FilePath $env:EXE_PATH
+          $sig | Format-List * | Out-File "./security-reports/authenticode-signature.txt" -Encoding utf8
+
+          if ($sig.Status -ne "Valid") {
+            Write-Warning "Executable is not signed with a valid Authenticode signature."
+          } else {
+            Write-Host "Executable signature is valid."
+          }
+
+      - name: 10. Upload binary security reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-security-reports
+          path: security-reports/
